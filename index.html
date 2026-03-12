@@ -3,61 +3,64 @@
 <html>
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
 <title>Juju de banane</title>
 
 <style>
 
 body{
-font-family: Tahoma, Verdana;
-background:#3a6ea5;
 margin:0;
-height:100vh;
-display:flex;
-align-items:center;
-justify-content:center;
-}
-
-#window{
-width:700px;
-height:450px;
-background:#ece9d8;
-border:3px solid #0a246a;
-box-shadow:4px 4px 0px #000;
+font-family:monospace;
+background:#0a0a0a;
+color:#fff;
 display:flex;
 flex-direction:column;
+height:100vh;
 }
 
-#titlebar{
-background:linear-gradient(#245edb,#0c3ea3);
-color:white;
-padding:5px;
+/* header */
+
+#top{
+background:#111;
+padding:10px;
+text-align:center;
 font-weight:bold;
+font-size:20px;
+color:#ffe600;
+text-shadow:0 0 6px #ffe600;
+border-bottom:2px solid #333;
 }
 
-#main{
+/* layout */
+
+#container{
 flex:1;
 display:flex;
+overflow:hidden;
 }
 
+/* users */
+
 #users{
-width:180px;
-background:#d4d0c8;
-border-right:2px solid #808080;
-padding:5px;
+width:90px;
+background:#111;
+border-right:2px solid #222;
 overflow:auto;
 }
 
 .user{
-background:white;
-border:1px solid #808080;
-padding:4px;
-margin-bottom:4px;
+padding:8px;
+border-bottom:1px solid #222;
 cursor:pointer;
+color:#9aff00;
 }
 
 .user:hover{
-background:#cce5ff;
+background:#1c1c1c;
 }
+
+/* chat */
 
 #chat{
 flex:1;
@@ -67,50 +70,74 @@ flex-direction:column;
 
 #messages{
 flex:1;
-padding:10px;
 overflow:auto;
-background:white;
+padding:10px;
 }
 
+/* messages */
+
 .msg{
-max-width:60%;
-margin:5px;
-padding:5px 8px;
-border:1px solid #808080;
-background:#f1f1f1;
+max-width:70%;
+margin:6px 0;
+padding:6px 10px;
+border-radius:6px;
+font-size:14px;
 }
 
 .me{
 margin-left:auto;
-background:#d2f8d2;
+background:#ffe600;
+color:#000;
+}
+
+.other{
+background:#222;
+border:1px solid #333;
 }
 
 .time{
 font-size:10px;
-color:#555;
+opacity:0.6;
 }
+
+/* send */
 
 #send{
 display:flex;
-border-top:2px solid #808080;
-background:#d4d0c8;
+border-top:2px solid #222;
 }
 
 #text{
 flex:1;
+padding:12px;
 border:none;
-padding:6px;
+background:#111;
+color:white;
+font-size:14px;
 }
 
 button{
 width:80px;
-border:1px solid #808080;
-background:#ece9d8;
-cursor:pointer;
+border:none;
+background:#ffe600;
+font-weight:bold;
 }
 
-button:hover{
-background:#e0e0e0;
+/* corruption effect */
+
+.corrupt{
+animation:glitch 0.2s infinite;
+}
+
+@keyframes glitch{
+
+0%{transform:translate(0)}
+20%{transform:translate(-1px,1px)}
+40%{transform:translate(1px,-1px)}
+60%{transform:translate(-1px,0)}
+80%{transform:translate(1px,1px)}
+100%{transform:translate(0)}
+
 }
 
 </style>
@@ -118,13 +145,9 @@ background:#e0e0e0;
 
 <body>
 
-<div id="window">
+<div id="top">🍌 JUJU DE BANANE</div>
 
-<div id="titlebar">
-Juju de banane - Chat
-</div>
-
-<div id="main">
+<div id="container">
 
 <div id="users"></div>
 
@@ -133,42 +156,41 @@ Juju de banane - Chat
 <div id="messages"></div>
 
 <div id="send">
-<input id="text" placeholder="Message...">
-<button onclick="send()">Envoyer</button>
+<input id="text" placeholder="message...">
+<button onclick="send()">send</button>
 </div>
 
-</div>
 </div>
 
 </div>
 
 <script>
 
-let pseudo = localStorage.getItem("pseudo")
+let pseudo=localStorage.getItem("pseudo")
 
 if(!pseudo){
-pseudo = prompt("Choisis ton pseudo")
+pseudo=prompt("pseudo ?")
 localStorage.setItem("pseudo",pseudo)
 }
 
-let currentUser = null
-let users = {}
+let users={}
+let currentUser=null
 
-let channel = new BroadcastChannel("juju_chat")
+let channel=new BroadcastChannel("banane_chat")
 
-channel.onmessage = e=>{
+channel.onmessage=e=>{
 receive(e.data)
 }
 
 function addUser(name){
 
-if(name===pseudo) return
-if(users[name]) return
+if(name===pseudo)return
+if(users[name])return
 
 users[name]=true
 
 let div=document.createElement("div")
-div.className="user"
+div.className="user corrupt"
 div.innerText=name
 
 div.onclick=()=>{
@@ -181,10 +203,10 @@ document.getElementById("users").appendChild(div)
 
 function send(){
 
-if(!currentUser) return
+if(!currentUser)return
 
 let txt=document.getElementById("text").value
-if(!txt) return
+if(!txt)return
 
 let msg={
 from:pseudo,
@@ -198,6 +220,7 @@ store(msg)
 channel.postMessage(msg)
 
 document.getElementById("text").value=""
+
 loadMessages()
 }
 
@@ -213,35 +236,38 @@ loadMessages()
 
 function store(msg){
 
-let data=JSON.parse(localStorage.getItem("messages")||"[]")
+let data=JSON.parse(localStorage.getItem("msgs")||"[]")
+
 data.push(msg)
-localStorage.setItem("messages",JSON.stringify(data))
+
+localStorage.setItem("msgs",JSON.stringify(data))
 }
 
 function loadMessages(){
 
 let box=document.getElementById("messages")
+
 box.innerHTML=""
 
-let data=JSON.parse(localStorage.getItem("messages")||"[]")
+let data=JSON.parse(localStorage.getItem("msgs")||"[]")
 
 data.forEach(m=>{
 
 if(
-(m.from===pseudo && m.to===currentUser) ||
-(m.from===currentUser && m.to===pseudo)
+(m.from===pseudo&&m.to===currentUser)||
+(m.from===currentUser&&m.to===pseudo)
 ){
 
 let div=document.createElement("div")
 
 div.className="msg "+(m.from===pseudo?"me":"other")
 
-let date=new Date(m.time)
+let d=new Date(m.time)
 
 div.innerHTML=
-"<div>"+m.text+"</div>"+
-"<div class='time'>"+
-date.getHours()+":"+String(date.getMinutes()).padStart(2,"0")+
+m.text+
+"<div class=time>"+
+d.getHours()+":"+String(d.getMinutes()).padStart(2,"0")+
 "</div>"
 
 box.appendChild(div)
@@ -254,10 +280,7 @@ box.scrollTop=box.scrollHeight
 
 }
 
-channel.postMessage({
-from:pseudo,
-text:"__join__"
-})
+channel.postMessage({from:pseudo})
 
 </script>
 
