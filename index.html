@@ -1,9 +1,266 @@
+```html
+<!DOCTYPE html>
 <html>
-    <head>
-        <title>Juju de banane</title>
-        <link rel="stylesheet" href="style/style.css">
-    </head>
-    <body>
-        
-    </body>
+<head>
+<meta charset="UTF-8">
+<title>Juju de banane</title>
+
+<style>
+
+body{
+font-family: Tahoma, Verdana;
+background:#3a6ea5;
+margin:0;
+height:100vh;
+display:flex;
+align-items:center;
+justify-content:center;
+}
+
+#window{
+width:700px;
+height:450px;
+background:#ece9d8;
+border:3px solid #0a246a;
+box-shadow:4px 4px 0px #000;
+display:flex;
+flex-direction:column;
+}
+
+#titlebar{
+background:linear-gradient(#245edb,#0c3ea3);
+color:white;
+padding:5px;
+font-weight:bold;
+}
+
+#main{
+flex:1;
+display:flex;
+}
+
+#users{
+width:180px;
+background:#d4d0c8;
+border-right:2px solid #808080;
+padding:5px;
+overflow:auto;
+}
+
+.user{
+background:white;
+border:1px solid #808080;
+padding:4px;
+margin-bottom:4px;
+cursor:pointer;
+}
+
+.user:hover{
+background:#cce5ff;
+}
+
+#chat{
+flex:1;
+display:flex;
+flex-direction:column;
+}
+
+#messages{
+flex:1;
+padding:10px;
+overflow:auto;
+background:white;
+}
+
+.msg{
+max-width:60%;
+margin:5px;
+padding:5px 8px;
+border:1px solid #808080;
+background:#f1f1f1;
+}
+
+.me{
+margin-left:auto;
+background:#d2f8d2;
+}
+
+.time{
+font-size:10px;
+color:#555;
+}
+
+#send{
+display:flex;
+border-top:2px solid #808080;
+background:#d4d0c8;
+}
+
+#text{
+flex:1;
+border:none;
+padding:6px;
+}
+
+button{
+width:80px;
+border:1px solid #808080;
+background:#ece9d8;
+cursor:pointer;
+}
+
+button:hover{
+background:#e0e0e0;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="window">
+
+<div id="titlebar">
+Juju de banane - Chat
+</div>
+
+<div id="main">
+
+<div id="users"></div>
+
+<div id="chat">
+
+<div id="messages"></div>
+
+<div id="send">
+<input id="text" placeholder="Message...">
+<button onclick="send()">Envoyer</button>
+</div>
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+let pseudo = localStorage.getItem("pseudo")
+
+if(!pseudo){
+pseudo = prompt("Choisis ton pseudo")
+localStorage.setItem("pseudo",pseudo)
+}
+
+let currentUser = null
+let users = {}
+
+let channel = new BroadcastChannel("juju_chat")
+
+channel.onmessage = e=>{
+receive(e.data)
+}
+
+function addUser(name){
+
+if(name===pseudo) return
+if(users[name]) return
+
+users[name]=true
+
+let div=document.createElement("div")
+div.className="user"
+div.innerText=name
+
+div.onclick=()=>{
+currentUser=name
+loadMessages()
+}
+
+document.getElementById("users").appendChild(div)
+}
+
+function send(){
+
+if(!currentUser) return
+
+let txt=document.getElementById("text").value
+if(!txt) return
+
+let msg={
+from:pseudo,
+to:currentUser,
+text:txt,
+time:Date.now()
+}
+
+store(msg)
+
+channel.postMessage(msg)
+
+document.getElementById("text").value=""
+loadMessages()
+}
+
+function receive(msg){
+
+addUser(msg.from)
+
+store(msg)
+
+if(currentUser===msg.from)
+loadMessages()
+}
+
+function store(msg){
+
+let data=JSON.parse(localStorage.getItem("messages")||"[]")
+data.push(msg)
+localStorage.setItem("messages",JSON.stringify(data))
+}
+
+function loadMessages(){
+
+let box=document.getElementById("messages")
+box.innerHTML=""
+
+let data=JSON.parse(localStorage.getItem("messages")||"[]")
+
+data.forEach(m=>{
+
+if(
+(m.from===pseudo && m.to===currentUser) ||
+(m.from===currentUser && m.to===pseudo)
+){
+
+let div=document.createElement("div")
+
+div.className="msg "+(m.from===pseudo?"me":"other")
+
+let date=new Date(m.time)
+
+div.innerHTML=
+"<div>"+m.text+"</div>"+
+"<div class='time'>"+
+date.getHours()+":"+String(date.getMinutes()).padStart(2,"0")+
+"</div>"
+
+box.appendChild(div)
+
+}
+
+})
+
+box.scrollTop=box.scrollHeight
+
+}
+
+channel.postMessage({
+from:pseudo,
+text:"__join__"
+})
+
+</script>
+
+</body>
 </html>
+```
